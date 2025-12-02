@@ -1,12 +1,5 @@
-/******************************************************************
- *  PACKAGE 1: PKG_PASSENGER_MGMT
- *  - Create passenger
- *  - Update passenger contact info
- *  - Calculate passenger age and age category (MINOR/ADULT/SENIOR)
- ******************************************************************/
-
 ------------------------------------------------------------
--- PACKAGE SPEC
+-- PACKAGE SPECIFICATION
 ------------------------------------------------------------
 CREATE OR REPLACE PACKAGE pkg_passenger_mgmt AS
 
