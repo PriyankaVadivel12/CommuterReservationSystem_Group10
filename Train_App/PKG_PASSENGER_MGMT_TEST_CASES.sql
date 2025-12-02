@@ -256,3 +256,32 @@ EXCEPTION
 END;
 /
 
+------------------------------------------------------------
+--TEST 8: UPDATE CONTACT WITH INVALID PHONE FORMAT (SHOULD FAIL)
+------------------------------------------------------------
+DECLARE
+  v_id NUMBER;
+BEGIN
+  -- Get an existing, valid passenger
+  SELECT passenger_id
+  INTO   v_id
+  FROM   TRAIN_DATA.CRS_PASSENGER
+  WHERE  ROWNUM = 1;  -- pick any existing passenger
+
+  TRAIN_DATA.pkg_passenger_mgmt.update_contact(
+    p_passenger_id => v_id,
+    p_email        => 'invalid.phone@test.com',
+    p_phone        => '98765'  -- invalid length
+  );
+
+  DBMS_OUTPUT.PUT_LINE('TEST 8: ERROR - SHOULD NOT SUCCEED');
+  COMMIT;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE(
+      'TEST 8: EXPECTED ERROR (invalid phone) -> ' || SQLERRM
+    );
+    ROLLBACK;
+END;
+/
