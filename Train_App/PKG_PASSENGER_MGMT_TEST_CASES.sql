@@ -285,3 +285,79 @@ EXCEPTION
     ROLLBACK;
 END;
 /
+
+------------------------------------------------------------
+--TEST 9: CREATE PASSENGER AND VALIDATE PERSISTED DETAILS
+------------------------------------------------------------
+DECLARE
+  v_pid       NUMBER;
+  v_fname     TRAIN_DATA.CRS_PASSENGER.first_name%TYPE;
+  v_lname     TRAIN_DATA.CRS_PASSENGER.last_name%TYPE;
+  v_email     TRAIN_DATA.CRS_PASSENGER.email%TYPE;
+  v_dob       DATE;
+  v_age_cat   VARCHAR2(30);
+BEGIN
+  ---------------------------------------------------------------------
+  -- 1) Create new passenger
+  ---------------------------------------------------------------------
+  TRAIN_DATA.pkg_passenger_mgmt.create_passenger(
+    p_first_name   => 'Priya',
+    p_middle_name  => NULL,
+    p_last_name    => 'Vel',
+    p_dob          => DATE '1998-06-20',
+    p_addr_line1   => '14 Cambridge Ave',
+    p_city         => 'Boston',
+    p_state        => 'MA',
+    p_zip          => '02135',
+    p_email        => 'priyavel.validation@test.com',
+    p_phone        => '6112222370',
+    p_passenger_id => v_pid
+  );
+
+  DBMS_OUTPUT.PUT_LINE('TEST 9: PASSENGER CREATED -> ID=' || v_pid);
+
+  ---------------------------------------------------------------------
+  -- 2) Fetch back core details (including DOB)
+  ---------------------------------------------------------------------
+  SELECT first_name, last_name, email, date_of_birth
+  INTO   v_fname, v_lname, v_email, v_dob
+  FROM   TRAIN_DATA.CRS_PASSENGER
+  WHERE  passenger_id = v_pid;
+
+  DBMS_OUTPUT.PUT_LINE(
+    'TEST 9: DB READ BACK -> ' ||
+    v_fname || ' ' || v_lname ||
+    ', Email=' || v_email ||
+    ', DOB=' || TO_CHAR(v_dob,'YYYY-MM-DD')
+  );
+
+  ---------------------------------------------------------------------
+  -- 3) Compute age category USING DOB
+  ---------------------------------------------------------------------
+  v_age_cat := TRAIN_DATA.pkg_passenger_mgmt.get_age_category(
+                  p_dob => v_dob
+               );
+
+  DBMS_OUTPUT.PUT_LINE(
+    'TEST 9: AGE CATEGORY RESULT -> ' || v_age_cat
+  );
+
+  ---------------------------------------------------------------------
+  -- 4) Final success
+  ---------------------------------------------------------------------
+  DBMS_OUTPUT.PUT_LINE(
+    'TEST 9 SUCCESS: Passenger saved and age category validated.'
+  );
+
+  COMMIT;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE(
+      'TEST 9 FAILURE -> ' || SQLERRM
+    );
+    ROLLBACK;
+END;
+/
+
+
