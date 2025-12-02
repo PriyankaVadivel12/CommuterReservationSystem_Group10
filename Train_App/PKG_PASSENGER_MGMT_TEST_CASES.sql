@@ -1,12 +1,11 @@
 SET SERVEROUTPUT ON;
 
-PROMPT ============================================================
-PROMPT  PASSENGER MANAGEMENT TEST CASES  (TRAIN_APP USER)
-PROMPT  This script validates:
-PROMPT   -> CREATE_PASSENGER  (success + duplicate constraint)
-PROMPT   -> UPDATE_CONTACT    (success, invalid passenger, duplicate emails)
-PROMPT   -> GET_AGE_CATEGORY  (MINOR / ADULT / SENIOR validation)
-PROMPT ============================================================
+
+--PASSENGER MANAGEMENT TEST CASES  (TRAIN_APP USER)
+--This script validates:
+---> CREATE_PASSENGER  (success + duplicate constraint)
+---> UPDATE_CONTACT    (success, invalid passenger, duplicate emails)
+---> GET_AGE_CATEGORY  (MINOR / ADULT / SENIOR validation)
 
 
 ------------------------------------------------------------
@@ -39,7 +38,7 @@ EXCEPTION
 END;
 /
 ------------------------------------------------------------
--- Verify TEST 1 result (optional)
+-- Verify TEST 1 result 
 ------------------------------------------------------------
 SELECT passenger_id, first_name, last_name, email, phone
 FROM   TRAIN_DATA.CRS_PASSENGER
@@ -77,10 +76,6 @@ EXCEPTION
     ROLLBACK;
 END;
 /
-------------------------------------------------------------
--- EXTRA TESTS FOR PASSENGER MANAGEMENT
-------------------------------------------------------------
-
 
 ------------------------------------------------------------
 -- TEST 3: Update contact for existing passenger (SUCCESS)
@@ -117,7 +112,7 @@ WHERE  email = 'aryaa.updated@example.com';
 
 
 ------------------------------------------------------------
--- TEST 4: Update non-existing passenger (should FAIL: ORA-20011)
+-- TEST 4: Update non-existing passenger (should FAIL)
 ------------------------------------------------------------
 BEGIN
   TRAIN_DATA.pkg_passenger_mgmt.update_contact(
@@ -139,7 +134,7 @@ END;
 
 
 ------------------------------------------------------------
--- TEST 5: Duplicate email/phone on update (should FAIL: ORA-20012)
+-- TEST 5: Duplicate email/phone on update (should Fail)
 -- Steps:
 --   1) Create a second passenger with a distinct email/phone
 --   2) Try to update Aryaa to use the second passenger's email/phone
@@ -195,7 +190,7 @@ EXCEPTION
     ROLLBACK;
 END;
 /
--- Optional: check both passengers
+-- check both passengers(if needed)
 SELECT passenger_id, first_name, last_name, email, phone
 FROM   TRAIN_DATA.CRS_PASSENGER
 WHERE  email IN ('aryaa.updated@example.com','second.user@example.com')
@@ -227,6 +222,142 @@ EXCEPTION
     ROLLBACK;
 END;
 /
+
+
 ------------------------------------------------------------
--- END OF PASSENGER MANAGEMENT TESTS
+--TEST 7: INVALID ZIP FORMAT (SHOULD FAIL CHECK CONSTRAINT)
 ------------------------------------------------------------
+DECLARE
+  v_id NUMBER;
+BEGIN
+  TRAIN_DATA.pkg_passenger_mgmt.create_passenger(
+    p_first_name   => 'Priyanka',
+    p_middle_name  => NULL,
+    p_last_name    => 'Vadivel',
+    p_dob          => DATE '1992-02-02',
+    p_addr_line1   => '123 Beacon Street',
+    p_city         => 'Boston',
+    p_state        => 'MA',
+    p_zip          => '0211',          -- invalid (4 digits only)
+    p_email        => 'priyanka.invalid.zip@test.com',
+    p_phone        => '7776665555',
+    p_passenger_id => v_id
+  );
+
+  DBMS_OUTPUT.PUT_LINE('TEST 7: ERROR - SHOULD NOT INSERT');
+  COMMIT;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE(
+      'TEST 7: EXPECTED ERROR (invalid zip) -> ' || SQLERRM
+    );
+    ROLLBACK;
+END;
+/
+
+------------------------------------------------------------
+--TEST 8: UPDATE CONTACT WITH INVALID PHONE FORMAT (SHOULD FAIL)
+------------------------------------------------------------
+DECLARE
+  v_id NUMBER;
+BEGIN
+  -- Get an existing, valid passenger
+  SELECT passenger_id
+  INTO   v_id
+  FROM   TRAIN_DATA.CRS_PASSENGER
+  WHERE  ROWNUM = 1;  -- pick any existing passenger
+
+  TRAIN_DATA.pkg_passenger_mgmt.update_contact(
+    p_passenger_id => v_id,
+    p_email        => 'invalid.phone@test.com',
+    p_phone        => '98765'  -- invalid length
+  );
+
+  DBMS_OUTPUT.PUT_LINE('TEST 8: ERROR - SHOULD NOT SUCCEED');
+  COMMIT;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE(
+      'TEST 8: EXPECTED ERROR (invalid phone) -> ' || SQLERRM
+    );
+    ROLLBACK;
+END;
+/
+
+------------------------------------------------------------
+--TEST 9: CREATE PASSENGER AND VALIDATE PERSISTED DETAILS
+------------------------------------------------------------
+DECLARE
+  v_pid       NUMBER;
+  v_fname     TRAIN_DATA.CRS_PASSENGER.first_name%TYPE;
+  v_lname     TRAIN_DATA.CRS_PASSENGER.last_name%TYPE;
+  v_email     TRAIN_DATA.CRS_PASSENGER.email%TYPE;
+  v_dob       DATE;
+  v_age_cat   VARCHAR2(30);
+BEGIN
+  ---------------------------------------------------------------------
+  -- 1) Create new passenger
+  ---------------------------------------------------------------------
+  TRAIN_DATA.pkg_passenger_mgmt.create_passenger(
+    p_first_name   => 'Priya',
+    p_middle_name  => NULL,
+    p_last_name    => 'Vel',
+    p_dob          => DATE '1998-06-20',
+    p_addr_line1   => '14 Cambridge Ave',
+    p_city         => 'Boston',
+    p_state        => 'MA',
+    p_zip          => '02135',
+    p_email        => 'priyavel.validation@test.com',
+    p_phone        => '6112222370',
+    p_passenger_id => v_pid
+  );
+
+  DBMS_OUTPUT.PUT_LINE('TEST 9: PASSENGER CREATED -> ID=' || v_pid);
+
+  ---------------------------------------------------------------------
+  -- 2) Fetch back core details (including DOB)
+  ---------------------------------------------------------------------
+  SELECT first_name, last_name, email, date_of_birth
+  INTO   v_fname, v_lname, v_email, v_dob
+  FROM   TRAIN_DATA.CRS_PASSENGER
+  WHERE  passenger_id = v_pid;
+
+  DBMS_OUTPUT.PUT_LINE(
+    'TEST 9: DB READ BACK -> ' ||
+    v_fname || ' ' || v_lname ||
+    ', Email=' || v_email ||
+    ', DOB=' || TO_CHAR(v_dob,'YYYY-MM-DD')
+  );
+
+  ---------------------------------------------------------------------
+  -- 3) Compute age category USING DOB
+  ---------------------------------------------------------------------
+  v_age_cat := TRAIN_DATA.pkg_passenger_mgmt.get_age_category(
+                  p_dob => v_dob
+               );
+
+  DBMS_OUTPUT.PUT_LINE(
+    'TEST 9: AGE CATEGORY RESULT -> ' || v_age_cat
+  );
+
+  ---------------------------------------------------------------------
+  -- 4) Final success
+  ---------------------------------------------------------------------
+  DBMS_OUTPUT.PUT_LINE(
+    'TEST 9 SUCCESS: Passenger saved and age category validated.'
+  );
+
+  COMMIT;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE(
+      'TEST 9 FAILURE -> ' || SQLERRM
+    );
+    ROLLBACK;
+END;
+/
+
+
