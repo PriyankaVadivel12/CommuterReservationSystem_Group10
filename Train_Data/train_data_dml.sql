@@ -271,10 +271,191 @@ BEGIN
   END LOOP;
 END;
 /
+    ----------------------------
+-- 8. Train T808 runs Mon–Thu
+----------------------------
+BEGIN
+  FOR i IN 1..4 LOOP
+    INSERT INTO CRS_TRAIN_SCHEDULE
+      (tsch_id, sch_id, train_id, is_in_service)
+    VALUES
+      (seq_crs_train_schedule.NEXTVAL, i, 8, 'Y');
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 9. Train T909 runs Tue–Sat
+----------------------------
+BEGIN
+  FOR i IN 2..6 LOOP
+    INSERT INTO CRS_TRAIN_SCHEDULE
+      (tsch_id, sch_id, train_id, is_in_service)
+    VALUES
+      (seq_crs_train_schedule.NEXTVAL, i, 9, 'Y');
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 10. Train T010 runs Mon, Wed, Fri, Sun
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i IN (1,3,5,7) THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 10, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 11. Train T111 runs Wed–Sun
+----------------------------
+BEGIN
+  FOR i IN 3..7 LOOP
+    INSERT INTO CRS_TRAIN_SCHEDULE
+      (tsch_id, sch_id, train_id, is_in_service)
+    VALUES
+      (seq_crs_train_schedule.NEXTVAL, i, 11, 'Y');
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 12. Train T121 runs Mon, Thu, Sat
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i IN (1,4,6) THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 12, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 13. Train T131 runs Tue, Fri
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i IN (2,5) THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 13, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 14. Train T141 runs daily except Tuesday
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i != 2 THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 14, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 15. Train T151 runs weekends only
+----------------------------
+BEGIN
+  FOR i IN 6..7 LOOP
+    INSERT INTO CRS_TRAIN_SCHEDULE
+      (tsch_id, sch_id, train_id, is_in_service)
+    VALUES
+      (seq_crs_train_schedule.NEXTVAL, i, 15, 'Y');
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 16. Train T161 runs Mon–Wed
+----------------------------
+BEGIN
+  FOR i IN 1..3 LOOP
+    INSERT INTO CRS_TRAIN_SCHEDULE
+      (tsch_id, sch_id, train_id, is_in_service)
+    VALUES
+      (seq_crs_train_schedule.NEXTVAL, i, 16, 'Y');
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 17. Train T171 runs Thu–Sun
+----------------------------
+BEGIN
+  FOR i IN 4..7 LOOP
+    INSERT INTO CRS_TRAIN_SCHEDULE
+      (tsch_id, sch_id, train_id, is_in_service)
+    VALUES
+      (seq_crs_train_schedule.NEXTVAL, i, 17, 'Y');
+  END LOOP;
+END;
+/
+ ----------------------------
+-- 18. Train T181 runs Mon, Tue, Thu, Fri
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i IN (1,2,4,5) THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 18, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 19. Train T191 runs Wed, Thu, Sat
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i IN (3,4,6) THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 19, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 20. Train T201 runs all 7 days
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    INSERT INTO CRS_TRAIN_SCHEDULE
+      (tsch_id, sch_id, train_id, is_in_service)
+    VALUES
+      (seq_crs_train_schedule.NEXTVAL, i, 20, 'Y');
+  END LOOP;
+END;
+/
 
 COMMIT;
 
 
+
+COMMIT;
 
 ----------------------------
 -- Verification queries
