@@ -212,8 +212,68 @@ BEGIN
   END LOOP;
 END;
 /
+----------------------------
+-- 4. Train T404 runs Mon, Wed, Fri
+----------------------------
+BEGIN
+  FOR i IN 1..5 LOOP
+    IF i IN (1,3,5) THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 4, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 5. Train T505 runs Tue, Thu, Sat
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i IN (2,4,6) THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 5, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 6. Train T606 runs daily except Wednesday
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i != 3 THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 6, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
+
+----------------------------
+-- 7. Train T707 runs weekends + Monday
+----------------------------
+BEGIN
+  FOR i IN 1..7 LOOP
+    IF i IN (1,6,7) THEN
+      INSERT INTO CRS_TRAIN_SCHEDULE
+        (tsch_id, sch_id, train_id, is_in_service)
+      VALUES
+        (seq_crs_train_schedule.NEXTVAL, i, 7, 'Y');
+    END IF;
+  END LOOP;
+END;
+/
 
 COMMIT;
+
 
 
 ----------------------------
