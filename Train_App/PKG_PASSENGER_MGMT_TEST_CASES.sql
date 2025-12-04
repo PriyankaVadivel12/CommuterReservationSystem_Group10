@@ -29,21 +29,16 @@ BEGIN
   );
 
   DBMS_OUTPUT.PUT_LINE('TEST1: PASSENGER CREATED, ID = ' || v_passenger_id);
-  COMMIT;  -- keep this passenger for later tests
+  --COMMIT;  -- keep this passenger for later tests
 
 EXCEPTION
   WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE('TEST1: UNEXPECTED ERROR -> ' || SQLERRM);
-    ROLLBACK;
+    
 END;
 /
-------------------------------------------------------------
--- Verify TEST 1 result 
-------------------------------------------------------------
-SELECT passenger_id, first_name, last_name, email, phone
-FROM   TRAIN_DATA.CRS_PASSENGER
-WHERE  email = 'arch.test@example.com';
-/
+
+ROLLBACK;
 
 
 ------------------------------------------------------------
@@ -62,20 +57,22 @@ BEGIN
     p_city         => 'Boston',
     p_state        => 'MA',
     p_zip          => '02115',
-    p_email        => 'arch.test@example.com', -- DUPLICATE email
-    p_phone        => '9998886677',              -- DUPLICATE phone
+    p_email        => 'john.carter@example.com', -- DUPLICATE email
+    p_phone        => '6175550001',              -- DUPLICATE phone
     p_passenger_id => v_passenger_id
   );
 
   DBMS_OUTPUT.PUT_LINE('TEST2: ERROR, THIS SHOULD NOT BE PRINTED');
-  COMMIT;  -- would only happen if test failed (no error)
+  --COMMIT;  -- would only happen if test failed (no error)
 
 EXCEPTION
   WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE('TEST2: EXPECTED ERROR -> ' || SQLERRM);
-    ROLLBACK;
+    
 END;
 /
+
+ROLLBACK;
 
 ------------------------------------------------------------
 -- TEST 3: Update contact for existing passenger (SUCCESS)
@@ -87,28 +84,24 @@ BEGIN
   SELECT passenger_id
   INTO   v_passenger_id
   FROM   TRAIN_DATA.CRS_PASSENGER
-  WHERE  email = 'arch.test@example.com';
+  WHERE  email = 'john.carter@example.com';
 
   TRAIN_DATA.pkg_passenger_mgmt.update_contact(
     p_passenger_id => v_passenger_id,
-    p_email        => 'arch.updated@example.com',
-    p_phone        => '9998886677'
+    p_email        => 'john.carter@updated.com',
+    p_phone        => '6175550001'
   );
 
-  DBMS_OUTPUT.PUT_LINE('TEST3: Contact updated successfully for passenger_id = '||v_passenger_id);
-  COMMIT;
+  DBMS_OUTPUT.PUT_LINE('TEST3: Contact and Phone number updated successfully for passenger_id = '||v_passenger_id);
+  --COMMIT;
 
 EXCEPTION
   WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE('TEST3: UNEXPECTED ERROR -> ' || SQLERRM);
-    ROLLBACK;
+    
 END;
 /
--- Verify TEST 3
-SELECT passenger_id, first_name, last_name, email, phone
-FROM   TRAIN_DATA.CRS_PASSENGER
-WHERE  email = 'arch.updated@example.com';
-/
+ROLLBACK;
 
 
 ------------------------------------------------------------
@@ -122,14 +115,16 @@ BEGIN
   );
 
   DBMS_OUTPUT.PUT_LINE('TEST4: ERROR, THIS SHOULD NOT BE PRINTED');
-  COMMIT;
+  --COMMIT;
 
 EXCEPTION
   WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE('TEST4: EXPECTED ERROR -> ' || SQLERRM);
-    ROLLBACK;
+    
 END;
 /
+
+ROLLBACK;
 ------------------------------------------------------------
 
 
@@ -140,14 +135,14 @@ END;
 --   2) Try to update Arch to use the second passenger's email/phone
 ------------------------------------------------------------
 DECLARE
-  v_arch_id   NUMBER;
+  v_john_id   NUMBER;
   v_second_id  NUMBER;
 BEGIN
-  -- Step 1: ensure Arch's id (after update)
+  -- Step 1
   SELECT passenger_id
-  INTO   v_arch_id
+  INTO   v_john_id
   FROM   TRAIN_DATA.CRS_PASSENGER
-  WHERE  email = 'arch.updated@example.com';
+  WHERE  email = 'john.carter@example.com';
 
   -- Step 2: create second passenger
   TRAIN_DATA.pkg_passenger_mgmt.create_passenger(
@@ -165,18 +160,18 @@ BEGIN
   );
 
   DBMS_OUTPUT.PUT_LINE('TEST5: Created second passenger, ID = '||v_second_id);
-  COMMIT;  -- persist second passenger
+  --COMMIT;  -- persist second passenger
 
   -- Step 3: try to update Aryaa with same email/phone as second passenger
   BEGIN
     TRAIN_DATA.pkg_passenger_mgmt.update_contact(
-      p_passenger_id => v_arch_id,
+      p_passenger_id => v_john_id,
       p_email        => 'second.user@example.com', -- DUPLICATE email
       p_phone        => '8885554444'               -- DUPLICATE phone
     );
 
     DBMS_OUTPUT.PUT_LINE('TEST5: ERROR, THIS SHOULD NOT BE PRINTED (duplicate).');
-    COMMIT;
+    --COMMIT;
 
   EXCEPTION
     WHEN OTHERS THEN
@@ -187,16 +182,10 @@ BEGIN
 EXCEPTION
   WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE('TEST5: UNEXPECTED OUTER ERROR -> ' || SQLERRM);
-    ROLLBACK;
+    
 END;
 /
--- check both passengers(if needed)
-SELECT passenger_id, first_name, last_name, email, phone
-FROM   TRAIN_DATA.CRS_PASSENGER
-WHERE  email IN ('arch.updated@example.com','second.user@example.com')
-ORDER  BY passenger_id;
-/
-
+ROLLBACK;
 
 ------------------------------------------------------------
 -- TEST 6: Age / category function (MINOR / ADULT / SENIOR)
@@ -245,16 +234,18 @@ BEGIN
   );
 
   DBMS_OUTPUT.PUT_LINE('TEST 7: ERROR - SHOULD NOT INSERT');
-  COMMIT;
+  --COMMIT;
 
 EXCEPTION
   WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE(
       'TEST 7: EXPECTED ERROR (invalid zip) -> ' || SQLERRM
     );
-    ROLLBACK;
+    
 END;
 /
+
+ROLLBACK;
 
 ------------------------------------------------------------
 --TEST 8: UPDATE CONTACT WITH INVALID PHONE FORMAT (SHOULD FAIL)
@@ -275,16 +266,17 @@ BEGIN
   );
 
   DBMS_OUTPUT.PUT_LINE('TEST 8: ERROR - SHOULD NOT SUCCEED');
-  COMMIT;
+  --COMMIT;
 
 EXCEPTION
   WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE(
       'TEST 8: EXPECTED ERROR (invalid phone) -> ' || SQLERRM
     );
-    ROLLBACK;
+    
 END;
 /
+ROLLBACK;
 
 ------------------------------------------------------------
 --TEST 9: CREATE PASSENGER AND VALIDATE PERSISTED DETAILS
@@ -349,15 +341,15 @@ BEGIN
     'TEST 9 SUCCESS: Passenger saved and age category validated.'
   );
 
-  COMMIT;
+  --COMMIT;
 
 EXCEPTION
   WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE(
       'TEST 9 FAILURE -> ' || SQLERRM
     );
-    ROLLBACK;
+    
 END;
 /
-
+ROLLBACK;
 
