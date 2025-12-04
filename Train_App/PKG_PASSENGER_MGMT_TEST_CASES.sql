@@ -15,16 +15,16 @@ DECLARE
   v_passenger_id NUMBER;
 BEGIN
   TRAIN_DATA.pkg_passenger_mgmt.create_passenger(
-    p_first_name   => 'Aryaa',
+    p_first_name   => 'Arch',
     p_middle_name  => NULL,
-    p_last_name    => 'Hanamar',
-    p_dob          => DATE '1997-05-10',
-    p_addr_line1   => '123 Boston St',
+    p_last_name    => 'Mani',
+    p_dob          => DATE '1997-06-10',
+    p_addr_line1   => '124 Boston St',
     p_city         => 'Boston',
     p_state        => 'MA',
-    p_zip          => '02115',
-    p_email        => 'aryaa.test@example.com',
-    p_phone        => '9998887777',
+    p_zip          => '02114',
+    p_email        => 'arch.test@example.com',
+    p_phone        => '9998886677',
     p_passenger_id => v_passenger_id
   );
 
@@ -42,7 +42,7 @@ END;
 ------------------------------------------------------------
 SELECT passenger_id, first_name, last_name, email, phone
 FROM   TRAIN_DATA.CRS_PASSENGER
-WHERE  email = 'aryaa.test@example.com';
+WHERE  email = 'arch.test@example.com';
 /
 
 
@@ -62,8 +62,8 @@ BEGIN
     p_city         => 'Boston',
     p_state        => 'MA',
     p_zip          => '02115',
-    p_email        => 'aryaa.test@example.com', -- DUPLICATE email
-    p_phone        => '9998887777',              -- DUPLICATE phone
+    p_email        => 'arch.test@example.com', -- DUPLICATE email
+    p_phone        => '9998886677',              -- DUPLICATE phone
     p_passenger_id => v_passenger_id
   );
 
@@ -79,7 +79,7 @@ END;
 
 ------------------------------------------------------------
 -- TEST 3: Update contact for existing passenger (SUCCESS)
---         Change Aryaa's email/phone to new unique values
+--         Change Passenger Arch's email/phone to new unique values
 ------------------------------------------------------------
 DECLARE
   v_passenger_id NUMBER;
@@ -87,12 +87,12 @@ BEGIN
   SELECT passenger_id
   INTO   v_passenger_id
   FROM   TRAIN_DATA.CRS_PASSENGER
-  WHERE  email = 'aryaa.test@example.com';
+  WHERE  email = 'arch.test@example.com';
 
   TRAIN_DATA.pkg_passenger_mgmt.update_contact(
     p_passenger_id => v_passenger_id,
-    p_email        => 'aryaa.updated@example.com',
-    p_phone        => '9997776666'
+    p_email        => 'arch.updated@example.com',
+    p_phone        => '9998886677'
   );
 
   DBMS_OUTPUT.PUT_LINE('TEST3: Contact updated successfully for passenger_id = '||v_passenger_id);
@@ -107,7 +107,7 @@ END;
 -- Verify TEST 3
 SELECT passenger_id, first_name, last_name, email, phone
 FROM   TRAIN_DATA.CRS_PASSENGER
-WHERE  email = 'aryaa.updated@example.com';
+WHERE  email = 'arch.updated@example.com';
 /
 
 
@@ -137,17 +137,17 @@ END;
 -- TEST 5: Duplicate email/phone on update (should Fail)
 -- Steps:
 --   1) Create a second passenger with a distinct email/phone
---   2) Try to update Aryaa to use the second passenger's email/phone
+--   2) Try to update Arch to use the second passenger's email/phone
 ------------------------------------------------------------
 DECLARE
-  v_aryaa_id   NUMBER;
+  v_arch_id   NUMBER;
   v_second_id  NUMBER;
 BEGIN
-  -- Step 1: ensure Aryaa's id (after update)
+  -- Step 1: ensure Arch's id (after update)
   SELECT passenger_id
-  INTO   v_aryaa_id
+  INTO   v_arch_id
   FROM   TRAIN_DATA.CRS_PASSENGER
-  WHERE  email = 'aryaa.updated@example.com';
+  WHERE  email = 'arch.updated@example.com';
 
   -- Step 2: create second passenger
   TRAIN_DATA.pkg_passenger_mgmt.create_passenger(
@@ -170,7 +170,7 @@ BEGIN
   -- Step 3: try to update Aryaa with same email/phone as second passenger
   BEGIN
     TRAIN_DATA.pkg_passenger_mgmt.update_contact(
-      p_passenger_id => v_aryaa_id,
+      p_passenger_id => v_arch_id,
       p_email        => 'second.user@example.com', -- DUPLICATE email
       p_phone        => '8885554444'               -- DUPLICATE phone
     );
@@ -193,7 +193,7 @@ END;
 -- check both passengers(if needed)
 SELECT passenger_id, first_name, last_name, email, phone
 FROM   TRAIN_DATA.CRS_PASSENGER
-WHERE  email IN ('aryaa.updated@example.com','second.user@example.com')
+WHERE  email IN ('arch.updated@example.com','second.user@example.com')
 ORDER  BY passenger_id;
 /
 
@@ -301,7 +301,7 @@ BEGIN
   -- 1) Create new passenger
   ---------------------------------------------------------------------
   TRAIN_DATA.pkg_passenger_mgmt.create_passenger(
-    p_first_name   => 'Priya',
+    p_first_name   => 'Arul',
     p_middle_name  => NULL,
     p_last_name    => 'Vel',
     p_dob          => DATE '1998-06-20',
@@ -309,8 +309,8 @@ BEGIN
     p_city         => 'Boston',
     p_state        => 'MA',
     p_zip          => '02135',
-    p_email        => 'priyavel.validation@test.com',
-    p_phone        => '6112222370',
+    p_email        => 'arulvel.validation@test.com',
+    p_phone        => '6112222371',
     p_passenger_id => v_pid
   );
 
