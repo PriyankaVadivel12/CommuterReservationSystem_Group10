@@ -251,7 +251,7 @@ FROM   CRS_PASSENGER
 WHERE  passenger_id BETWEEN 2001 AND 2006
 ORDER  BY passenger_id;
 
--- Reservations joined with train + passenger (nice for reports)
+-- Reservations joined with train + passenger
 SELECT r.booking_id,
        p.first_name || ' ' || p.last_name AS passenger_name,
        t.train_number,
