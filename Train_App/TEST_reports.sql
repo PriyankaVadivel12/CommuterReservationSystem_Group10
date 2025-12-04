@@ -10,7 +10,7 @@ PROMPT ============================================================
 --   Example: tomorrow, or TRUNC(SYSDATE)+2 for your big test
 ------------------------------------------------------------
 DECLARE
-  v_date DATE := TRUNC(SYSDATE) + 2;  -- adjust as needed
+  v_date DATE := TRUNC(SYSDATE) + 1;  -- adjust as needed
 BEGIN
   DBMS_OUTPUT.PUT_LINE('--- Calling PKG_CRS_REPORTS.print_daily_train_load ---');
   TRAIN_DATA.PKG_CRS_REPORTS.print_daily_train_load(p_travel_date => v_date);
@@ -26,7 +26,8 @@ END;
 BEGIN
   DBMS_OUTPUT.PUT_LINE('--- Calling PKG_CRS_REPORTS.print_passenger_history ---');
   TRAIN_DATA.PKG_CRS_REPORTS.print_passenger_history(
-    p_email => 'aryaa.updated@example.com'
+    p_email => 'emily.watson@example.com'
+
   );
 END;
 /
@@ -38,7 +39,7 @@ END;
 --   Example: T101, ECON, same date used in capacity tests
 ------------------------------------------------------------
 DECLARE
-  v_date DATE := TRUNC(SYSDATE) + 2;  -- same date as RPT1
+  v_date DATE := TRUNC(SYSDATE) + 1;  -- same date as RPT1
 BEGIN
   DBMS_OUTPUT.PUT_LINE('--- Calling PKG_CRS_REPORTS.print_waitlist_detail ---');
   TRAIN_DATA.PKG_CRS_REPORTS.print_waitlist_detail(
