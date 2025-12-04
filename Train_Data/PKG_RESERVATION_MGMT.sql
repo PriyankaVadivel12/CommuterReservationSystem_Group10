@@ -205,36 +205,33 @@ CREATE OR REPLACE PACKAGE BODY pkg_reservation_mgmt AS
     ----------------------------------------------------------
     -- 4. Decide status: CONFIRMED vs WAITLISTED vs error
     ----------------------------------------------------------
-   IF v_available > 0 THEN
-  -- Seats are available → confirm booking
-  p_final_status := 'CONFIRMED';
-  p_waitlist_position := NULL;
+    IF v_available > 0 THEN
+      p_final_status      := 'CONFIRMED';
+      p_waitlist_position := NULL;
 
-ELSIF v_available = 0 AND v_waitlist_left > 0 THEN
-  -- No seats → put passenger on waitlist
-  p_final_status := 'WAITLISTED';
+    ELSIF v_available = 0 AND v_waitlist_left > 0 THEN
+      p_final_status := 'WAITLISTED';
 
-  -- Find next waitlist number (max + 1)
-  SELECT NVL(MAX(waitlist_position), 0) + 1
-  INTO v_next_waitlist_pos
-  FROM CRS_RESERVATION
-  WHERE train_id = v_train_id
-    AND travel_date = TRUNC(p_travel_date)
-    AND seat_class = v_seat_class_norm
-    AND seat_status = 'WAITLISTED';
+      SELECT NVL(MAX(waitlist_position), 0) + 1
+      INTO   v_next_waitlist_pos
+      FROM   CRS_RESERVATION
+      WHERE  train_id    = v_train_id
+      AND    travel_date = TRUNC(p_travel_date)
+      AND    seat_class  = v_seat_class_norm
+      AND    seat_status = 'WAITLISTED';
 
-  p_waitlist_position := v_next_waitlist_pos;
+      p_waitlist_position := v_next_waitlist_pos;
 
-ELSE
-  -- No seats AND no waitlist → cannot book
-  RAISE_APPLICATION_ERROR(
-    -20062,
-    'No seats or waitlist available for train '
-    || p_train_number || ' on '
-    || TO_CHAR(TRUNC(p_travel_date),'YYYY-MM-DD')
-    || ' (class ' || v_seat_class_norm || ').'
-  );
-END IF;
+    ELSE
+      RAISE_APPLICATION_ERROR(
+        -20062,
+        'No seats or waitlist capacity left for train '||
+        TRIM(p_train_number)||' on '||
+        TO_CHAR(TRUNC(p_travel_date),'YYYY-MM-DD')||
+        ' (class '||v_seat_class_norm||').'
+      );
+    END IF;
+
     ----------------------------------------------------------
     -- 5. Generate booking_id (simple MAX+1 approach)
     ----------------------------------------------------------
@@ -247,26 +244,28 @@ END IF;
     ----------------------------------------------------------
     -- 6. Insert reservation row (force non-parallel DML)
     ----------------------------------------------------------
-    INSERT INTO CRS_RESERVATION (
-  booking_id,
-  passenger_id,
-  train_id,
-  travel_date,
-  booking_date,
-  seat_class,
-  seat_status,
-  waitlist_position
-)
-VALUES (
-  p_booking_id,
-  p_passenger_id,
-  v_train_id,
-  TRUNC(p_travel_date),
-  TRUNC(SYSDATE),
-  v_seat_class_norm,
-  p_final_status,
-  p_waitlist_position
-);
+    INSERT /*+ NOPARALLEL */
+      INTO CRS_RESERVATION (
+        booking_id,
+        passenger_id,
+        train_id,
+        travel_date,
+        booking_date,
+        seat_class,
+        seat_status,
+        waitlist_position
+      ) VALUES (
+        p_booking_id,
+        p_passenger_id,
+        v_train_id,
+        TRUNC(p_travel_date),
+        TRUNC(SYSDATE),
+        v_seat_class_norm,
+        p_final_status,
+        p_waitlist_position
+      );
+  END book_ticket;
+
 
   ----------------------------------------------------------------
   -- PROCEDURE: cancel_ticket
@@ -297,83 +296,96 @@ VALUES (
     -- 2. Fetch reservation row FOR UPDATE
     ----------------------------------------------------------
     BEGIN
-  -- Get the booking details
-  SELECT train_id, travel_date, seat_class, seat_status, waitlist_position
-  INTO v_train_id, v_travel_date, v_seat_class, v_seat_status, v_waitlist_position
-  FROM CRS_RESERVATION
-  WHERE booking_id = p_booking_id;
+      SELECT train_id,
+             travel_date,
+             seat_class,
+             seat_status,
+             waitlist_position
+      INTO   v_train_id,
+             v_travel_date,
+             v_seat_class,
+             v_seat_status,
+             v_waitlist_position
+      FROM   CRS_RESERVATION
+      WHERE  booking_id = p_booking_id
+      FOR UPDATE;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(
+          -20064,
+          'Booking not found for id: '||p_booking_id
+        );
+    END;
 
-  -- Check if cancelled
-  IF v_seat_status = 'CANCELLED' THEN
-    RAISE_APPLICATION_ERROR(-20065, 'Booking is already cancelled.');
-  END IF;
-
-EXCEPTION
-  WHEN NO_DATA_FOUND THEN
-    RAISE_APPLICATION_ERROR(-20064, 'Booking ID not found.');
-END;
+    IF v_seat_status = 'CANCELLED' THEN
+      RAISE_APPLICATION_ERROR(
+        -20065,
+        'Booking '||p_booking_id||' is already CANCELLED.'
+      );
+    END IF;
 
     ----------------------------------------------------------
     -- 3. Handle CONFIRMED cancellation
     ----------------------------------------------------------
-    -- If the seat is confirmed, cancel it and promote next waitlisted person
-IF v_seat_status = 'CONFIRMED' THEN
+    IF v_seat_status = 'CONFIRMED' THEN
+      -- a) cancel current booking
+      UPDATE /*+ NOPARALLEL */
+             CRS_RESERVATION
+      SET    seat_status       = 'CANCELLED',
+             waitlist_position = NULL
+      WHERE  booking_id        = p_booking_id;
 
-  -- 1. Cancel the current booking
-  UPDATE CRS_RESERVATION
-  SET seat_status = 'CANCELLED',
-      waitlist_position = NULL
-  WHERE booking_id = p_booking_id;
+      -- b) promote first WAITLISTED (lowest position), if any
+      BEGIN
+        SELECT booking_id, waitlist_position
+        INTO   v_promote_booking_id, v_promote_position
+        FROM   CRS_RESERVATION
+        WHERE  train_id    = v_train_id
+        AND    travel_date = v_travel_date
+        AND    seat_class  = v_seat_class
+        AND    seat_status = 'WAITLISTED'
+        AND    waitlist_position = (
+                 SELECT MIN(waitlist_position)
+                 FROM   CRS_RESERVATION
+                 WHERE  train_id    = v_train_id
+                 AND    travel_date = v_travel_date
+                 AND    seat_class  = v_seat_class
+                 AND    seat_status = 'WAITLISTED'
+               );
 
-  -- 2. Promote the first waitlisted booking (lowest waitlist_position)
-  BEGIN
-    -- Get the next waitlisted booking
-    SELECT booking_id, waitlist_position
-    INTO v_promote_booking_id, v_promote_position
-    FROM CRS_RESERVATION
-    WHERE train_id = v_train_id
-      AND travel_date = v_travel_date
-      AND seat_class = v_seat_class
-      AND seat_status = 'WAITLISTED'
-    ORDER BY waitlist_position
-    FETCH FIRST 1 ROW ONLY;   -- beginner-friendly way
+        UPDATE /*+ NOPARALLEL */
+               CRS_RESERVATION
+        SET    seat_status       = 'CONFIRMED',
+               waitlist_position = NULL
+        WHERE  booking_id        = v_promote_booking_id;
+      EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+          -- no waitlist to promote: nothing else to do
+          NULL;
+      END;
 
-    -- Promote it
-    UPDATE CRS_RESERVATION
-    SET seat_status = 'CONFIRMED',
-        waitlist_position = NULL
-    WHERE booking_id = v_promote_booking_id;
-
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-      -- No one to promote
-      NULL;
-  END;
-
-END IF;
     ----------------------------------------------------------
     -- 4. Handle WAITLISTED cancellation
     ----------------------------------------------------------
     ELSIF v_seat_status = 'WAITLISTED' THEN
+      -- a) cancel this waitlisted booking
+      UPDATE /*+ NOPARALLEL */
+             CRS_RESERVATION
+      SET    seat_status       = 'CANCELLED',
+             waitlist_position = NULL
+      WHERE  booking_id        = p_booking_id;
 
-  -- 1. Cancel the waitlisted booking
-  UPDATE CRS_RESERVATION
-  SET seat_status = 'CANCELLED',
-      waitlist_position = NULL
-  WHERE booking_id = p_booking_id;
-
-  -- 2. Shift waitlist positions up (compact the list)
-  IF v_waitlist_position IS NOT NULL THEN
-    UPDATE CRS_RESERVATION
-    SET waitlist_position = waitlist_position - 1
-    WHERE train_id = v_train_id
-      AND travel_date = v_travel_date
-      AND seat_class = v_seat_class
-      AND seat_status = 'WAITLISTED'
-      AND waitlist_position > v_waitlist_position;
-  END IF;
-
-END IF;
+      -- b) compact positions above the cancelled one
+      IF v_waitlist_position IS NOT NULL THEN
+        UPDATE /*+ NOPARALLEL */
+               CRS_RESERVATION
+        SET    waitlist_position = waitlist_position - 1
+        WHERE  train_id          = v_train_id
+        AND    travel_date       = v_travel_date
+        AND    seat_class        = v_seat_class
+        AND    seat_status       = 'WAITLISTED'
+        AND    waitlist_position > v_waitlist_position;
+      END IF;
 
     ----------------------------------------------------------
     -- 5. If some unexpected status, just mark CANCELLED
