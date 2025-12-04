@@ -1,11 +1,11 @@
 
-# 🚆 Commuter Reservation System — Group 10
+# Commuter Reservation System — Group 10
 
 A database-driven Train Reservation System designed according to the given business rules for booking, cancelling, and managing confirmed and waitlisted tickets.
 
 ---
 
-## 📌 Project Overview
+## Project Overview
 
 This project implements a complete backend system for **train ticket reservations** using **Oracle SQL & PL/SQL**.
 It follows the exact requirements defined in the assignment:
@@ -23,7 +23,7 @@ The system supports automatic confirmation, waitlisting, cancellation, promotion
 
 ---
 
-## 📂 Repository Structure
+##  Repository Structure
 
 ```
 CommuterReservationSystem_Group10/
@@ -38,7 +38,7 @@ CommuterReservationSystem_Group10/
 
 ---
 
-## 📘 Requirements (from assignment)
+##  Requirements (from assignment)
 
 ### **1. Train Data Includes**
 
@@ -64,7 +64,7 @@ CommuterReservationSystem_Group10/
 
 ---
 
-## 🧠 **Business Rules Implemented**
+##  **Business Rules Implemented**
 
 ### **1. Passenger email & phone must be unique.**
 
@@ -102,22 +102,22 @@ CommuterReservationSystem_Group10/
 
 ---
 
-## 🛠️ **System Features Implemented**
+##  **System Features Implemented**
 
-### ✅ Ticket Booking
+###  Ticket Booking
 
 * Auto-assigns confirmed seat if available
 * Otherwise assigns next waitlist position
 * Prevents over-booking
 * Validates booking window (1-week limit)
 
-### ✅ Ticket Cancellation
+###  Ticket Cancellation
 
 * Cancels both CONFIRMED and WAITLISTED bookings
 * Promotes first waitlisted passenger
 * Rearranges remaining waitlist (compacting)
 
-### ✅ Data Validation
+###  Data Validation
 
 * Train & passenger existence
 * Booking time window
@@ -126,7 +126,7 @@ CommuterReservationSystem_Group10/
 
 ---
 
-## 🧱 **Database Design**
+##  **Database Design**
 
 ### **Conceptual Model (ER Diagram)**
 
@@ -151,23 +151,23 @@ Contains entities:
 
 ---
 
-## 🔧 **Setup Instructions**
+##  **Setup Instructions**
 
-### 1️⃣ Clone the repository
+###  Clone the repository
 
 ```bash
 git clone https://github.com/PriyankaVadivel12/CommuterReservationSystem_Group10.git
 ```
 
-### 2️⃣ Run Schema Creation Scripts
+###  Run Schema Creation Scripts
 
 Create required tables, constraints, sequences.
 
-### 3️⃣ Load Sample Data
+###  Load Sample Data
 
 Run scripts in **Train_Data/**.
 
-### 4️⃣ Compile PL/SQL Package
+### Compile PL/SQL Package
 
 Contains:
 
@@ -175,7 +175,7 @@ Contains:
 * `cancel_ticket`
 * Promotion & waitlist logic
 
-### 5️⃣ Run Test Cases
+###  Run Test Cases
 
 Use:
 
@@ -186,7 +186,7 @@ set serveroutput on;
 
 ---
 
-## 🧪 **Test Coverage**
+##  **Test Coverage**
 
 Includes tests for:
 
@@ -202,7 +202,7 @@ Includes tests for:
 
 ---
 
-## 👥 Contributors (Group 10)
+##  Contributors (Group 10)
 
 Add your group names here:
 
