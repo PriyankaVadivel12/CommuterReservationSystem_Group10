@@ -383,79 +383,103 @@ ROLLBACK;
 -------------------------------------------------------------------------------
 -- R9: cancel_ticket - WAITLISTED cancellation compacts positions
 -------------------------------------------------------------------------------
-PROMPT ============================================================
-PROMPT R9: cancel_ticket - WAITLISTED cancellation compacts positions
-PROMPT ============================================================
-DECLARE
-  v_passenger_id      NUMBER;
-  v_travel_date       DATE := TRUNC(SYSDATE) + 1;
-  v_dummy_id          NUMBER;
-  v_dummy_status      VARCHAR2(20);
-  v_dummy_pos         NUMBER;
-  v_bk_wait1          NUMBER;
-  v_bk_wait2          NUMBER;
-  v_bk_wait3          NUMBER;
-  v_status1           VARCHAR2(20);
-  v_status3           VARCHAR2(20);
-  v_pos1              NUMBER;
-  v_pos3              NUMBER;
-BEGIN
-  SELECT MIN(passenger_id)
-  INTO   v_passenger_id
-  FROM   TRAIN_DATA.CRS_PASSENGER;
 
-  -- fill all seats first (40 confirmed)
+SET SERVEROUTPUT ON;
+
+DECLARE
+  v_travel_date DATE := TRUNC(SYSDATE) + 2;
+
+  v_booking_id  NUMBER;
+  v_status      VARCHAR2(20);
+  v_pos         NUMBER;
+
+  v_bk_wait1 NUMBER;
+  v_bk_wait2 NUMBER;
+  v_bk_wait3 NUMBER;
+
+  v_status1 VARCHAR2(20);
+  v_status3 VARCHAR2(20);
+  v_pos1    NUMBER;
+  v_pos3    NUMBER;
+
+  v_pid_list SYS.odcinumberlist;
+BEGIN
+  -----------------------------------------------------
+  -- 1) Load all passengers
+  -----------------------------------------------------
+  SELECT passenger_id
+  BULK COLLECT INTO v_pid_list
+  FROM TRAIN_DATA.CRS_PASSENGER;
+
+  DBMS_OUTPUT.PUT_LINE('Total passengers available: '||v_pid_list.COUNT);
+
+  -----------------------------------------------------
+  -- 2) Fill Confirmed Seats (40)
+  -----------------------------------------------------
   FOR i IN 1..40 LOOP
     TRAIN_DATA.pkg_reservation_mgmt.book_ticket(
-      p_passenger_id      => v_passenger_id,
-      p_train_number      => 'T101',
-      p_travel_date       => v_travel_date,
-      p_seat_class        => 'ECON',
-      p_booking_id        => v_dummy_id,
-      p_final_status      => v_dummy_status,
-      p_waitlist_position => v_dummy_pos
+      p_passenger_id       => v_pid_list( MOD(i-1, v_pid_list.COUNT )+1 ),
+      p_train_number       => 'T101',
+      p_travel_date        => v_travel_date,
+      p_seat_class         => 'ECON',
+      p_booking_id         => v_booking_id,
+      p_final_status       => v_status,
+      p_waitlist_position  => v_pos
     );
   END LOOP;
 
-  -- create 3 waitlisted bookings
+  DBMS_OUTPUT.PUT_LINE('40 ECON seats booked successfully.');
+
+  -----------------------------------------------------
+  -- 3) Add 3 waitlisted bookings
+  -----------------------------------------------------
   TRAIN_DATA.pkg_reservation_mgmt.book_ticket(
-    p_passenger_id      => v_passenger_id,
-    p_train_number      => 'T101',
-    p_travel_date       => v_travel_date,
-    p_seat_class        => 'ECON',
-    p_booking_id        => v_bk_wait1,
-    p_final_status      => v_dummy_status,
-    p_waitlist_position => v_dummy_pos
+      p_passenger_id       => v_pid_list(1),
+      p_train_number       => 'T101',
+      p_travel_date        => v_travel_date,
+      p_seat_class         => 'ECON',
+      p_booking_id         => v_bk_wait1,
+      p_final_status       => v_status,
+      p_waitlist_position  => v_pos
   );
 
   TRAIN_DATA.pkg_reservation_mgmt.book_ticket(
-    p_passenger_id      => v_passenger_id,
-    p_train_number      => 'T101',
-    p_travel_date       => v_travel_date,
-    p_seat_class        => 'ECON',
-    p_booking_id        => v_bk_wait2,
-    p_final_status      => v_dummy_status,
-    p_waitlist_position => v_dummy_pos
+      p_passenger_id       => v_pid_list(2),
+      p_train_number       => 'T101',
+      p_travel_date        => v_travel_date,
+      p_seat_class         => 'ECON',
+      p_booking_id         => v_bk_wait2,
+      p_final_status       => v_status,
+      p_waitlist_position  => v_pos
   );
 
   TRAIN_DATA.pkg_reservation_mgmt.book_ticket(
-    p_passenger_id      => v_passenger_id,
-    p_train_number      => 'T101',
-    p_travel_date       => v_travel_date,
-    p_seat_class        => 'ECON',
-    p_booking_id        => v_bk_wait3,
-    p_final_status      => v_dummy_status,
-    p_waitlist_position => v_dummy_pos
+      p_passenger_id       => v_pid_list(3),
+      p_train_number       => 'T101',
+      p_travel_date        => v_travel_date,
+      p_seat_class         => 'ECON',
+      p_booking_id         => v_bk_wait3,
+      p_final_status       => v_status,
+      p_waitlist_position  => v_pos
   );
 
-  DBMS_OUTPUT.PUT_LINE('R9: Setup - wait1='||v_bk_wait1||
-                       ', wait2='||v_bk_wait2||
-                       ', wait3='||v_bk_wait3);
+  DBMS_OUTPUT.PUT_LINE(
+       'Waitlisted bookings created: '
+    || v_bk_wait1 || ', '
+    || v_bk_wait2 || ', '
+    || v_bk_wait3
+  );
 
-  -- cancel middle WAITLISTED booking
-  TRAIN_DATA.pkg_reservation_mgmt.cancel_ticket(p_booking_id => v_bk_wait2);
+  -----------------------------------------------------
+  -- 4) Cancel the middle waitlist (v_bk_wait2)
+  -----------------------------------------------------
+  TRAIN_DATA.pkg_reservation_mgmt.cancel_ticket(v_bk_wait2);
 
-  -- check remaining waitlist positions
+  DBMS_OUTPUT.PUT_LINE('Cancelled Booking ID '||v_bk_wait2);
+
+  -----------------------------------------------------
+  -- 5) Verify Positions
+  -----------------------------------------------------
   SELECT seat_status, waitlist_position
   INTO   v_status1, v_pos1
   FROM   TRAIN_DATA.CRS_RESERVATION
@@ -466,16 +490,18 @@ BEGIN
   FROM   TRAIN_DATA.CRS_RESERVATION
   WHERE  booking_id = v_bk_wait3;
 
-  DBMS_OUTPUT.PUT_LINE('R9: AFTER CANCEL - booking '||v_bk_wait1||
-                       ' -> status='||v_status1||', pos='||v_pos1);
-  DBMS_OUTPUT.PUT_LINE('R9: AFTER CANCEL - booking '||v_bk_wait3||
-                       ' -> status='||v_status3||', pos='||v_pos3);
-EXCEPTION
-  WHEN OTHERS THEN
-    DBMS_OUTPUT.PUT_LINE('R9: UNEXPECTED ERROR -> '||SQLERRM);
+  DBMS_OUTPUT.PUT_LINE(
+       'AFTER CANCEL: '
+    || v_bk_wait1 || ' -> '||v_status1||' (pos='||NVL(v_pos1,0)||')'
+  );
+
+  DBMS_OUTPUT.PUT_LINE(
+       'AFTER CANCEL: '
+    || v_bk_wait3 || ' -> '||v_status3||' (pos='||NVL(v_pos3,0)||')'
+  );
+
 END;
 /
-
 ROLLBACK;
 -------------------------------------------------------------------------------
 -- R10: cancel_ticket - NULL booking id (ERROR: ORA-20063)
@@ -549,4 +575,5 @@ END;
 /
 
 ROLLBACK;
+
 
